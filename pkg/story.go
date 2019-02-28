@@ -9,7 +9,7 @@ type Story map[string]Chapter
 
 type Chapter struct {
 	Title   string   `json:"title"`
-	Story   []string `json:"story"`
+	Paragraphs   []string `json:"story"`
 	Options []Option `json:"options"`
 }
 
@@ -27,3 +27,4 @@ func JsonStory(file io.Reader) (Story, error) {
 	}
 	return story, nil
 }
+
