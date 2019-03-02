@@ -13,26 +13,45 @@ func init() {
 
 var tpl *template.Template
 
-func NewHandler(s Story) http.Handler {
-	return handler{s}
+type HandlerOptions func(r *handler)
+
+func WithTemplate(t *template.Template) HandlerOptions {
+	return func (h *handler) {
+		h.template = t
+	}
+}
+
+func NewHandler(s Story, options ...HandlerOptions) http.Handler {
+	h := handler{ defaultPathFactory, s, tpl}
+
+	for _, opt := range options {
+		opt(&h)
+	}
+
+	return h
 }
 
 type handler struct {
+	pathFn func(r *http.Request) string
 	story Story
+	template *template.Template
 }
 
-func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func defaultPathFactory(r *http.Request) string {
 	path := strings.TrimSpace(r.URL.Path)
 
 	if path == "" || path == "/" {
 		path = "/intro"
 	}
 
-	path = path[1:]
+	return path[1:]
+}
 
+func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	path := h.pathFn(r)
 
 	if chapter, ok := h.story[path]; ok {
-		err := tpl.Execute(w, chapter)
+		err := h.template.Execute(w, chapter)
 		if err != nil {
 			fmt.Printf("%v", err)
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
